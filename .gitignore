@@ -20,3 +20,10 @@ Thumbs.db
 
 assets/
 
+data
+dataset
+datasets
+
+runs
+
+*.pt
