@@ -415,7 +415,7 @@ def build_placement_boxes(board: dict[str, object], num_slots: int = DEFAULT_NUM
         return []
 
     board_center = corners.mean(axis=0)
-    slot_size = max(18.0, short_len * 0.52)
+    slot_size = max(18.0, short_len * 0.2)
     unit_long = long_edge / max(np.linalg.norm(long_edge), 1.0)
     spacing = np.linalg.norm(long_edge) / float(num_slots + 1)
 
