@@ -27,3 +27,5 @@ datasets
 runs
 
 *.pt
+
+dataset_yolo_crops
