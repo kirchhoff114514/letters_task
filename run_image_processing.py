@@ -16,8 +16,8 @@ def main() -> None:
         detections=detections,
         source_box_id=1,
         placement_id=4,
-        background_dim_factor=0.6,
-        outline_width=4,
+        background_dim_factor=1,
+        fill_alpha=0.5,
     )
 
     result.annotated_image.save(OUTPUT_PATH)

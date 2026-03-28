@@ -5,13 +5,13 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image
-from PIL import ImageDraw
 from PIL import ImageEnhance
 
 
 BBox = tuple[int, int, int, int]
 RED = (255, 0, 0)
 BLUE = (0, 102, 255)
+DEFAULT_FILL_ALPHA = 0.5
 
 
 @dataclass(frozen=True)
@@ -28,17 +28,17 @@ def render_step_guidance(
     source_box_id: int,
     placement_id: int,
     background_dim_factor: float = 0.6,
-    outline_width: int = 4,
+    fill_alpha: float = DEFAULT_FILL_ALPHA,
 ) -> StepGuidanceRender:
     """Render a guidance image for the current step.
 
     Non-target regions are dimmed, while the selected pick block and placement
-    slot are restored to their original appearance and outlined.
+    slot are tinted with semi-transparent colors.
     """
     if not 0.0 <= background_dim_factor <= 1.0:
         raise ValueError("background_dim_factor must be between 0.0 and 1.0")
-    if outline_width < 1:
-        raise ValueError("outline_width must be >= 1")
+    if not 0.0 <= fill_alpha <= 1.0:
+        raise ValueError("fill_alpha must be between 0.0 and 1.0")
 
     base_image = _load_image(image).convert("RGB")
     pick_bbox = _extract_bbox(_resolve_box(detections.get("boxes", []), source_box_id))
@@ -46,12 +46,8 @@ def render_step_guidance(
 
     dimmed = ImageEnhance.Brightness(base_image).enhance(background_dim_factor)
     annotated = dimmed.copy()
-    annotated.paste(base_image.crop(pick_bbox), pick_bbox)
-    annotated.paste(base_image.crop(place_bbox), place_bbox)
-
-    draw = ImageDraw.Draw(annotated)
-    _draw_region(draw, pick_bbox, RED, outline_width, f"PICK {source_box_id}")
-    _draw_region(draw, place_bbox, BLUE, outline_width, f"PLACE {placement_id}")
+    _fill_region(annotated, pick_bbox, RED, fill_alpha)
+    _fill_region(annotated, place_bbox, BLUE, fill_alpha)
 
     return StepGuidanceRender(
         annotated_image=annotated,
@@ -116,13 +112,13 @@ def _extract_bbox(item: dict[str, Any]) -> BBox:
     return tuple(int(value) for value in bbox)
 
 
-def _draw_region(
-    draw: ImageDraw.ImageDraw,
+def _fill_region(
+    image: Image.Image,
     bbox: BBox,
     color: tuple[int, int, int],
-    outline_width: int,
-    label: str,
+    alpha: float,
 ) -> None:
-    draw.rectangle(bbox, outline=color, width=outline_width)
-    text_anchor = (bbox[0], max(0, bbox[1] - 14))
-    draw.text(text_anchor, label, fill=color)
+    region = image.crop(bbox)
+    overlay = Image.new("RGB", region.size, color)
+    blended = Image.blend(region, overlay, alpha)
+    image.paste(blended, bbox)
